@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Window Shadow Analysis Tool</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            overflow: hidden; /* Prevent scrollbars from appearing */
+        }
+        #container3d {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        .label {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.875rem;
+        }
+        .slider-value {
+            font-weight: 500;
+            min-width: 40px;
+            text-align: right;
+        }
+        #heatmapModal.hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <div id="container3d"></div>
+
+    <div id="controls" class="absolute top-4 left-4 w-80 bg-white text-gray-800 p-4 rounded-lg shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+        <img src="https://placehold.co/150x50/e2e8f0/334155?text=Your+Logo+Here" alt="Logo Placeholder" class="h-16 w-auto mx-auto my-2">
+        <h1 class="text-xl font-bold text-center text-gray-900">Shadow Analysis Controls</h1>
+
+        <!-- Building Controls -->
+        <div>
+            <h2 class="text-lg font-semibold text-gray-700 mb-2">Building</h2>
+            <div class="label">
+                <label for="buildingRotation">Orientation (°)</label>
+                <span id="buildingRotationValue" class="slider-value">0</span>
+            </div>
+            <input type="range" id="buildingRotation" min="0" max="360" value="0" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+        </div>
+
+        <!-- Window Controls -->
+        <div>
+            <h2 class="text-lg font-semibold text-gray-700 mb-2">Window</h2>
+            <div class="label">
+                <label for="windowWidth">Width (m)</label>
+                <span id="windowWidthValue" class="slider-value">1.5</span>
+            </div>
+            <input type="range" id="windowWidth" min="0.5" max="3.5" step="0.1" value="1.5" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+            <div class="label mt-2">
+                <label for="windowHeight">Height (m)</label>
+                <span id="windowHeightValue" class="slider-value">2.0</span>
+            </div>
+            <input type="range" id="windowHeight" min="0.5" max="3.5" step="0.1" value="2.0" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+        </div>
+
+        <!-- Shading Device Controls -->
+        <div>
+            <h2 class="text-lg font-semibold text-gray-700 mb-2">Shading Devices</h2>
+            <!-- Horizontal Louvers -->
+            <div class="label mt-2">
+                <label for="hLouversCount">Horizontal Louvers</label>
+                <span id="hLouversCountValue" class="slider-value">1</span>
+            </div>
+            <input type="range" id="hLouversCount" min="0" max="10" step="1" value="1" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+            <div class="label mt-1">
+                <label for="hLouversDepth">Louver Depth (m)</label>
+                <span id="hLouversDepthValue" class="slider-value">0.5</span>
+            </div>
+            <input type="range" id="hLouversDepth" min="0" max="2" step="0.1" value="0.5" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+            <!-- Vertical Fins -->
+            <div class="label mt-4">
+                <label for="vFinsCount">Vertical Fins</label>
+                <span id="vFinsCountValue" class="slider-value">0</span>
+            </div>
+            <input type="range" id="vFinsCount" min="0" max="10" step="1" value="0" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+            <div class="label mt-1">
+                <label for="vFinsDepth">Fin Depth (m)</label>
+                <span id="vFinsDepthValue" class="slider-value">0.5</span>
+            </div>
+            <input type="range" id="vFinsDepth" min="0" max="2" step="0.1" value="0.5" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+        </div>
+        
+        <!-- Sun Controls -->
+        <div>
+            <h2 class="text-lg font-semibold text-gray-700 mb-2">Location & Time</h2>
+            <!-- Latitude -->
+            <div class="label">
+                <label for="latitude">Latitude (°)</label>
+                <span id="latitudeValue" class="slider-value">10.7</span>
+            </div>
+            <input type="range" id="latitude" min="-90" max="90" step="0.1" value="10.7" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+            <!-- Longitude -->
+            <div class="label mt-2">
+                <label for="longitude">Longitude (°)</label>
+                <span id="longitudeValue" class="slider-value">78.7</span>
+            </div>
+            <input type="range" id="longitude" min="-180" max="180" step="0.1" value="78.7" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+            <!-- Month -->
+            <div class="label mt-2">
+                <label for="month">Month</label>
+                <span id="monthValue" class="slider-value">Sep</span>
+            </div>
+            <input type="range" id="month" min="1" max="12" step="1" value="9" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+            <!-- Day -->
+            <div class="label mt-2">
+                <label for="day">Day</label>
+                <span id="dayValue" class="slider-value">9</span>
+            </div>
+            <input type="range" id="day" min="1" max="30" step="1" value="9" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+            <!-- Time -->
+            <div class="label mt-2">
+                <label for="time">Time of Day (hr)</label>
+                <span id="timeValue" class="slider-value">14.0</span>
+            </div>
+            <input type="range" id="time" min="0" max="24" step="0.1" value="14.0" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer">
+        </div>
+        
+        <!-- Analysis Results -->
+        <div class="bg-gray-100 p-3 rounded-lg">
+            <h2 class="text-lg font-semibold text-gray-700 text-center">Analysis Result</h2>
+            <p class="text-2xl font-bold text-cyan-500 mt-1 text-center" id="shadowPercentage">0.00%</p>
+            <p class="text-xs text-gray-500 text-center">of window area is in shadow</p>
+        </div>
+        
+        <!-- Heatmap Section -->
+        <div class="bg-gray-100 p-3 rounded-lg">
+             <h2 class="text-lg font-semibold text-gray-700 text-center mb-2">Annual Performance</h2>
+             <button id="heatmapButton" class="w-full bg-cyan-600 hover:bg-cyan-700 text-white rounded-lg py-2 mt-1 font-bold transition-colors">Generate Heatmap</button>
+        </div>
+
+    </div>
+
+    <!-- Sun Position Display -->
+    <div id="sunInfo" class="absolute top-4 right-4 w-48 bg-white p-3 rounded-lg shadow-2xl space-y-2">
+        <h2 class="text-lg font-semibold text-center text-gray-800">Sun Position</h2>
+        <div class="flex justify-between items-center text-sm">
+            <span class="text-gray-600">Altitude:</span>
+            <span id="altitudeValueDisplay" class="font-bold text-cyan-500 text-base">0.00°</span>
+        </div>
+        <div class="flex justify-between items-center text-sm">
+            <span class="text-gray-600">Azimuth:</span>
+            <span id="azimuthValueDisplay" class="font-bold text-cyan-500 text-base">0.00°</span>
+        </div>
+    </div>
+
+    <!-- Heatmap Modal -->
+    <div id="heatmapModal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-lg shadow-2xl p-6 w-full max-w-4xl text-gray-800 relative">
+            <button id="closeHeatmap" class="absolute top-2 right-3 text-2xl font-bold text-gray-400 hover:text-gray-800">&times;</button>
+            <h2 class="text-2xl font-bold text-center mb-4">Annual Shading Heatmap</h2>
+            <div id="heatmapContainer" class="w-full bg-gray-100 p-2 rounded">
+                 <canvas id="heatmapCanvas"></canvas>
+            </div>
+            <div id="heatmapLegend" class="flex justify-center items-center mt-4 space-x-4 text-xs">
+                <span class="text-gray-700">0% (Sun)</span>
+                <div id="legendGradient" class="w-64 h-4 rounded" style="background: linear-gradient(to right, #3b82f6, #fde047, #dc2626);"></div>
+                <span class="text-gray-700">100% (Shade)</span>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Script imports -->
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://cdn.jsdelivr.net/npm/three@0.164.1/build/three.module.js",
+                "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.164.1/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        // --- SCENE SETUP ---
+        let scene, camera, renderer, controls;
+        let building, windowMesh, ground;
+        let sunLight, ambientLight;
+        let windowGridHelper, shadowVisualizationGroup;
+        let shadeGroup, shades = [];
+        
+        const CUBE_SIZE = 4;
+        const ANALYSIS_GRID_SIZE = 30; // For visualization
+        const HEATMAP_GRID_SIZE = 10; // For faster heatmap calculation
+
+        // --- DOM ELEMENTS ---
+        const container = document.getElementById('container3d');
+        const buildingRotationSlider = document.getElementById('buildingRotation');
+        const windowWidthSlider = document.getElementById('windowWidth');
+        const windowHeightSlider = document.getElementById('windowHeight');
+        const hLouversCountSlider = document.getElementById('hLouversCount');
+        const hLouversDepthSlider = document.getElementById('hLouversDepth');
+        const vFinsCountSlider = document.getElementById('vFinsCount');
+        const vFinsDepthSlider = document.getElementById('vFinsDepth');
+        const latitudeSlider = document.getElementById('latitude');
+        const longitudeSlider = document.getElementById('longitude');
+        const monthSlider = document.getElementById('month');
+        const daySlider = document.getElementById('day');
+        const timeSlider = document.getElementById('time');
+        const shadowPercentageDisplay = document.getElementById('shadowPercentage');
+        const altitudeValueDisplay = document.getElementById('altitudeValueDisplay');
+        const azimuthValueDisplay = document.getElementById('azimuthValueDisplay');
+        const heatmapButton = document.getElementById('heatmapButton');
+        const heatmapModal = document.getElementById('heatmapModal');
+        const closeHeatmapButton = document.getElementById('closeHeatmap');
+        const heatmapCanvas = document.getElementById('heatmapCanvas');
+
+
+        // --- INITIALIZATION ---
+        function init() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xffffff);
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(5, 5, 8);
+            camera.lookAt(0, CUBE_SIZE / 2, 0);
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            container.appendChild(renderer.domElement);
+            controls = new OrbitControls(camera, renderer.domElement);
+            controls.target.set(0, CUBE_SIZE / 2, 0);
+            controls.enableDamping = true;
+            ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            scene.add(ambientLight);
+            sunLight = new THREE.DirectionalLight(0xffffff, 2);
+            sunLight.castShadow = true;
+            sunLight.shadow.mapSize.width = 2048; sunLight.shadow.mapSize.height = 2048;
+            sunLight.shadow.camera.far = 50;
+            scene.add(sunLight);
+            sunLight.target.position.set(0,0,0);
+            scene.add(sunLight.target);
+            const buildingGeo = new THREE.BoxGeometry(CUBE_SIZE, CUBE_SIZE, CUBE_SIZE);
+            const buildingMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
+            building = new THREE.Mesh(buildingGeo, buildingMat);
+            building.position.y = CUBE_SIZE / 2;
+            building.castShadow = true; building.receiveShadow = true; 
+            scene.add(building);
+            const windowGeo = new THREE.PlaneGeometry(1.5, 2.0);
+            const windowMat = new THREE.MeshBasicMaterial({ color: 0x87ceeb, side: THREE.DoubleSide, transparent: true, opacity: 0.5 });
+            windowMesh = new THREE.Mesh(windowGeo, windowMat);
+            windowMesh.position.z = CUBE_SIZE / 2 + 0.01;
+            building.add(windowMesh);
+            shadowVisualizationGroup = new THREE.Group();
+            shadowVisualizationGroup.position.z = 0.002;
+            windowMesh.add(shadowVisualizationGroup);
+            shadeGroup = new THREE.Group();
+            building.add(shadeGroup);
+            const groundGeo = new THREE.PlaneGeometry(50, 50);
+            const groundMat = new THREE.MeshStandardMaterial({ color: 0x556B2F, side: THREE.DoubleSide });
+            ground = new THREE.Mesh(groundGeo, groundMat);
+            ground.rotation.x = -Math.PI / 2;
+            ground.receiveShadow = true;
+            scene.add(ground);
+            ['N', 'S', 'E', 'W'].forEach(dir => {
+                const label = createTextSprite(dir, { fontsize: 48, fontface: 'Arial', textColor: { r: 50, g: 50, b: 50, a: 1.0 } });
+                if (dir === 'N') label.position.set(0, 0.1, -12);
+                if (dir === 'S') label.position.set(0, 0.1, 12);
+                if (dir === 'E') label.position.set(12, 0.1, 0);
+                if (dir === 'W') label.position.set(-12, 0.1, 0);
+                scene.add(label);
+            });
+            setupEventListeners();
+            window.addEventListener('resize', onWindowResize);
+            updateBuilding(); updateWindow(); updateSunPosition();
+            animate();
+        }
+
+        function setupEventListeners() {
+            document.querySelectorAll('input[type="range"]').forEach(slider => {
+                const valueSpan = document.getElementById(slider.id + 'Value');
+                if (valueSpan && !['month', 'day'].includes(slider.id)) {
+                     slider.addEventListener('input', () => {
+                        const step = slider.step;
+                        const decimalPlaces = step.includes('.') ? step.split('.')[1].length : 0;
+                        valueSpan.textContent = parseFloat(slider.value).toFixed(decimalPlaces);
+                     });
+                }
+            });
+            buildingRotationSlider.addEventListener('input', updateBuilding);
+            windowWidthSlider.addEventListener('input', updateWindow);
+            windowHeightSlider.addEventListener('input', updateWindow);
+            hLouversCountSlider.addEventListener('input', updateShadingDevices);
+            hLouversDepthSlider.addEventListener('input', updateShadingDevices);
+            vFinsCountSlider.addEventListener('input', updateShadingDevices);
+            vFinsDepthSlider.addEventListener('input', updateShadingDevices);
+            latitudeSlider.addEventListener('input', updateSunPosition);
+            longitudeSlider.addEventListener('input', updateSunPosition);
+            monthSlider.addEventListener('input', updateSunPosition);
+            daySlider.addEventListener('input', updateSunPosition);
+            timeSlider.addEventListener('input', updateSunPosition);
+            heatmapButton.addEventListener('click', showHeatmap);
+            closeHeatmapButton.addEventListener('click', () => heatmapModal.classList.add('hidden'));
+        }
+
+        function updateBuilding() {
+            building.rotation.y = THREE.MathUtils.degToRad(buildingRotationSlider.value);
+            runShadowAnalysis();
+        }
+
+        function updateWindow() {
+            const width = parseFloat(windowWidthSlider.value), height = parseFloat(windowHeightSlider.value);
+            windowMesh.geometry.dispose();
+            windowMesh.geometry = new THREE.PlaneGeometry(width, height);
+            if (windowGridHelper) windowMesh.remove(windowGridHelper);
+            const points = []; const gridDivs = ANALYSIS_GRID_SIZE;
+            for (let i = 0; i <= gridDivs; i++) {
+                points.push(new THREE.Vector3(-width/2 + (i*width/gridDivs), -height/2, 0), new THREE.Vector3(-width/2 + (i*width/gridDivs), height/2, 0));
+                points.push(new THREE.Vector3(-width/2, -height/2 + (i*height/gridDivs), 0), new THREE.Vector3(width/2, -height/2 + (i*height/gridDivs), 0));
+            }
+            const gridGeom = new THREE.BufferGeometry().setFromPoints(points);
+            windowGridHelper = new THREE.LineSegments(gridGeom, new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.4 }));
+            windowGridHelper.position.z = 0.001;
+            windowMesh.add(windowGridHelper);
+            updateShadingDevices();
+        }
+
+        function updateShadingDevices() {
+            while (shadeGroup.children.length > 0) shadeGroup.remove(shadeGroup.children[0]);
+            shades = [];
+            const winW = parseFloat(windowWidthSlider.value), winH = parseFloat(windowHeightSlider.value);
+            const hLCount = parseInt(hLouversCountSlider.value), hLDepth = parseFloat(hLouversDepthSlider.value);
+            const vFCount = parseInt(vFinsCountSlider.value), vFDepth = parseFloat(vFinsDepthSlider.value);
+            const shadeMat = new THREE.MeshStandardMaterial({ color: 0xaaaaaa });
+
+            if (hLCount > 0 && hLDepth > 0) {
+                const vSpacing = winH / hLCount;
+                for (let i = 0; i < hLCount; i++) {
+                    const louver = new THREE.Mesh(new THREE.BoxGeometry(winW + 0.2, 0.1, hLDepth), shadeMat);
+                    louver.castShadow = true; louver.receiveShadow = true;
+                    louver.position.set(0, (winH / 2) - (i * vSpacing), CUBE_SIZE / 2 + 0.01 + hLDepth / 2);
+                    shadeGroup.add(louver); shades.push(louver);
+                }
+            }
+            if (vFCount > 0 && vFDepth > 0) {
+                 if (vFCount === 1) { 
+                    const fin = new THREE.Mesh(new THREE.BoxGeometry(0.1, winH + 0.2, vFDepth), shadeMat);
+                    fin.castShadow = true; fin.receiveShadow = true;
+                    fin.position.set(0, 0, CUBE_SIZE / 2 + 0.01 + vFDepth / 2);
+                    shadeGroup.add(fin); shades.push(fin);
+                } else { 
+                    const hSpacing = winW / (vFCount - 1);
+                    for (let i = 0; i < vFCount; i++) {
+                        const fin = new THREE.Mesh(new THREE.BoxGeometry(0.1, winH + 0.2, vFDepth), shadeMat);
+                        fin.castShadow = true; fin.receiveShadow = true;
+                        fin.position.set((-winW / 2) + (i * hSpacing), 0, CUBE_SIZE / 2 + 0.01 + vFDepth / 2);
+                        shadeGroup.add(fin); shades.push(fin);
+                    }
+                }
+            }
+            runShadowAnalysis();
+        }
+        
+        function createTextSprite(msg, params) {
+            const canvas = document.createElement('canvas'), ctx = canvas.getContext('2d');
+            ctx.font = `Bold ${params.fontsize || 18}px ${params.fontface || 'Arial'}`;
+            ctx.fillStyle = `rgba(${params.textColor.r},${params.textColor.g},${params.textColor.b},${params.textColor.a})`;
+            ctx.fillText(msg, 0, params.fontsize);
+            const texture = new THREE.Texture(canvas); texture.needsUpdate = true;
+            const sprite = new THREE.Sprite(new THREE.SpriteMaterial({ map: texture }));
+            sprite.scale.set(2, 1, 1.0);
+            return sprite;
+        }
+
+        const daysInMonth = [0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
+        const monthNames = ["", "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        function getDayOfYear(month, day) { return daysInMonth.slice(1, month).reduce((acc, days) => acc + days, 0) + day; }
+
+        function getDateFromDayOfYear(dayOfYear) {
+            let month = 1;
+            while(dayOfYear > daysInMonth[month]) {
+                dayOfYear -= daysInMonth[month];
+                month++;
+            }
+            return { month, day: dayOfYear };
+        }
+
+        function calculateSunPosition(lat, lon, month, day, time) {
+            const doy = getDayOfYear(month, day);
+            const B = THREE.MathUtils.degToRad((360/365)*(doy-81));
+            const eot = 9.87*Math.sin(2*B) - 7.53*Math.cos(B) - 1.5*Math.sin(B);
+            const decl = THREE.MathUtils.degToRad(-23.45*Math.cos(THREE.MathUtils.degToRad((360/365.0)*(doy+10))));
+            const tc = 4*(lon - (15*Math.round(lon/15))) + eot;
+            const hra = THREE.MathUtils.degToRad(15*((time + tc/60)-12));
+            const latRad = THREE.MathUtils.degToRad(lat);
+            const altRad = Math.asin(Math.sin(decl)*Math.sin(latRad) + Math.cos(decl)*Math.cos(latRad)*Math.cos(hra));
+            const azRad = Math.atan2(Math.sin(hra), Math.cos(hra)*Math.sin(latRad) - Math.tan(decl)*Math.cos(latRad));
+            return { altitude: THREE.MathUtils.radToDeg(altRad), azimuth: THREE.MathUtils.radToDeg(azRad) + 180 };
+        }
+
+        function updateSunPosition() {
+            const month = parseInt(monthSlider.value), daysInSelMonth = daysInMonth[month];
+            daySlider.max = daysInSelMonth;
+            if (parseInt(daySlider.value) > daysInSelMonth) daySlider.value = daysInSelMonth;
+            document.getElementById('monthValue').textContent = monthNames[month];
+            document.getElementById('dayValue').textContent = daySlider.value;
+            const sunPos = calculateSunPosition(parseFloat(latitudeSlider.value), parseFloat(longitudeSlider.value), month, parseInt(daySlider.value), parseFloat(timeSlider.value));
+            const alt = Math.max(0, sunPos.altitude), az = sunPos.azimuth;
+            altitudeValueDisplay.textContent = alt.toFixed(2) + '°';
+            azimuthValueDisplay.textContent = az.toFixed(2) + '°';
+            const azRad = THREE.MathUtils.degToRad(az), altRad = THREE.MathUtils.degToRad(alt);
+            sunLight.position.set(20*Math.cos(altRad)*Math.sin(azRad), 20*Math.sin(altRad), -20*Math.cos(altRad)*Math.cos(azRad));
+            runShadowAnalysis();
+        }
+
+        const shadowCellGeo = new THREE.PlaneGeometry(1, 1);
+        const shadowCellMat = new THREE.MeshBasicMaterial({ color: 0x1e3a8a, transparent: true, opacity: 0.75 });
+        function runShadowAnalysis() {
+            scene.updateMatrixWorld(true);
+            while(shadowVisualizationGroup.children.length > 0) shadowVisualizationGroup.remove(shadowVisualizationGroup.children[0]);
+            const sunDir = sunLight.position.clone().normalize();
+            if (new THREE.Vector3(0,0,1).applyQuaternion(building.quaternion).dot(sunDir) <= 0) {
+                shadowPercentageDisplay.textContent = '100.00%';
+                const winW = parseFloat(windowWidthSlider.value), winH = parseFloat(windowHeightSlider.value);
+                shadowVisualizationGroup.add(new THREE.Mesh(new THREE.PlaneGeometry(winW, winH), shadowCellMat));
+                return;
+            }
+            const raycaster = new THREE.Raycaster();
+            let shadowedPoints = 0; const totalPoints = ANALYSIS_GRID_SIZE**2;
+            const winW = parseFloat(windowWidthSlider.value), winH = parseFloat(windowHeightSlider.value);
+            const cellW = winW / ANALYSIS_GRID_SIZE, cellH = winH / ANALYSIS_GRID_SIZE;
+            for (let i = 0; i < ANALYSIS_GRID_SIZE; i++) {
+                for (let j = 0; j < ANALYSIS_GRID_SIZE; j++) {
+                    const x = -winW/2 + cellW*(i+0.5), y = -winH/2 + cellH*(j+0.5);
+                    const point = windowMesh.localToWorld(new THREE.Vector3(x, y, 0));
+                    raycaster.set(point, sunDir);
+                    if (raycaster.intersectObjects(shades).length > 0) {
+                        shadowedPoints++;
+                        const shadowCell = new THREE.Mesh(shadowCellGeo, shadowCellMat);
+                        shadowCell.scale.set(cellW, cellH, 1);
+                        shadowCell.position.set(x, y, 0.001);
+                        shadowVisualizationGroup.add(shadowCell);
+                    }
+                }
+            }
+            shadowPercentageDisplay.textContent = ((shadowedPoints/totalPoints)*100).toFixed(2) + '%';
+        }
+
+        // --- HEATMAP FUNCTIONS ---
+        async function showHeatmap() {
+            heatmapModal.classList.remove('hidden');
+            heatmapButton.textContent = 'Calculating...';
+            heatmapButton.disabled = true;
+
+            await new Promise(resolve => setTimeout(resolve, 50)); // Allow UI to update
+
+            const heatmapData = await generateHeatmapData();
+            drawHeatmap(heatmapData);
+
+            heatmapButton.textContent = 'Generate Heatmap';
+            heatmapButton.disabled = false;
+        }
+        
+        async function generateHeatmapData() {
+            const data = Array(365).fill(null).map(() => Array(24).fill(null));
+            const lat = parseFloat(latitudeSlider.value), lon = parseFloat(longitudeSlider.value);
+            const buildingQuat = building.quaternion.clone();
+            const buildingNormal = new THREE.Vector3(0, 0, 1).applyQuaternion(buildingQuat);
+
+            for(let day = 1; day <= 365; day++) {
+                const date = getDateFromDayOfYear(day);
+                for (let hour = 0; hour < 24; hour++) {
+                    const sunPos = calculateSunPosition(lat, lon, date.month, date.day, hour);
+                    
+                    if(sunPos.altitude > 0) {
+                        const azRad = THREE.MathUtils.degToRad(sunPos.azimuth), altRad = THREE.MathUtils.degToRad(sunPos.altitude);
+                        const sunDir = new THREE.Vector3( Math.cos(altRad)*Math.sin(azRad), Math.sin(altRad), -Math.cos(altRad)*Math.cos(azRad)).normalize();
+
+                        if (buildingNormal.dot(sunDir) > 0) {
+                            data[day-1][hour] = calculateShadowPercentageForHeatmap(sunDir);
+                        }
+                    }
+                }
+            }
+            return data;
+        }
+
+        function calculateShadowPercentageForHeatmap(sunDirection) {
+            const winW = parseFloat(windowWidthSlider.value), winH = parseFloat(windowHeightSlider.value);
+            const raycaster = new THREE.Raycaster();
+            let shadowedPoints = 0;
+            const totalPoints = HEATMAP_GRID_SIZE ** 2;
+
+            for (let i = 0; i < HEATMAP_GRID_SIZE; i++) {
+                for (let j = 0; j < HEATMAP_GRID_SIZE; j++) {
+                    const x = -winW/2 + (winW / HEATMAP_GRID_SIZE)*(i+0.5);
+                    const y = -winH/2 + (winH / HEATMAP_GRID_SIZE)*(j+0.5);
+                    
+                    const localPoint = new THREE.Vector3(x, y, 0);
+                    const worldPoint = windowMesh.localToWorld(localPoint.clone());
+                    
+                    raycaster.set(worldPoint, sunDirection);
+                    if (raycaster.intersectObjects(shades).length > 0) {
+                        shadowedPoints++;
+                    }
+                }
+            }
+            return (shadowedPoints / totalPoints) * 100;
+        }
+
+        function drawHeatmap(data) {
+            const ctx = heatmapCanvas.getContext('2d');
+            const container = document.getElementById('heatmapContainer');
+            const width = container.clientWidth;
+            const height = 400;
+            heatmapCanvas.width = width;
+            heatmapCanvas.height = height;
+
+            const cellWidth = (width - 60) / 365;
+            const cellHeight = (height - 50) / 24;
+            const yAxisLabelWidth = 50;
+            const xAxisLabelHeight = 40;
+
+            ctx.clearRect(0, 0, width, height);
+            
+            // Draw data
+            for(let day = 0; day < 365; day++) {
+                for(let hour = 0; hour < 24; hour++) {
+                    if (data[day][hour] !== null) {
+                        ctx.fillStyle = getColorForPercentage(data[day][hour]);
+                        ctx.fillRect(yAxisLabelWidth + day * cellWidth, hour * cellHeight, cellWidth, cellHeight);
+                    }
+                }
+            }
+
+            // Draw Y Axis (Hours)
+            ctx.fillStyle = '#374151';
+            ctx.font = '10px Inter';
+            for (let hour = 0; hour < 24; hour += 2) {
+                ctx.textAlign = 'right';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(`${hour}:00`, yAxisLabelWidth - 10, hour * cellHeight + cellHeight);
+            }
+
+            // Draw X Axis (Months)
+            let currentMonthX = yAxisLabelWidth;
+            for(let month = 1; month <= 12; month++) {
+                ctx.textAlign = 'center';
+                const monthWidth = daysInMonth[month] * cellWidth;
+                ctx.fillText(monthNames[month], currentMonthX + monthWidth/2, height - 20);
+                currentMonthX += monthWidth;
+                ctx.beginPath();
+                ctx.moveTo(currentMonthX, 0);
+                ctx.lineTo(currentMonthX, height - xAxisLabelHeight);
+                ctx.strokeStyle = 'rgba(0, 0, 0, 0.1)';
+                ctx.stroke();
+            }
+        }
+
+        function getColorForPercentage(p) {
+            // Blue (0) -> Yellow (50) -> Red (100)
+            const h = (1.0 - p / 100) * 240 / 360; // Hue from blue to red
+            const s = 1.0;
+            const l = 0.5;
+            
+            let r, g, b;
+            if (p < 50) {
+                // blue to yellow
+                r = Math.floor(255 * (p/50));
+                g = 224; // FDE047 -> ~224
+                b = Math.floor(255 * (1 - p/50));
+            } else {
+                // yellow to red
+                r = 255;
+                g = Math.floor(224 * (1 - (p-50)/50));
+                b = 0;
+            }
+            return `rgb(${r}, ${g}, ${b})`;
+        }
+
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+        init();
+    </script>
+</body>
+</html>
+
+
+
+
+
